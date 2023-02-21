@@ -7,33 +7,22 @@
 
 import Foundation
 import CoreBluetooth
-
+import Combine
 class BluetoothManager: NSObject, ObservableObject {
-    var preDefinedPeripheralCBIUIDs: [CBUUID]? = [CBUUID(string: "0x180D")]
-    @Published var peripheralsDetected: [CBPeripheral] = []
-    @Published var centralState: CBManagerState = .unknown {
-        didSet {
-            switch centralState {
-            case .poweredOff:
-                print("Bluetooth centeral is powered off")
-            case .poweredOn:
-                print("Bluetooth centeral is powered on")
-                scanPeripherals()
-            case .resetting:
-                print("Bluetooth centeral is reseting")
-            case .unauthorized:
-                print("You are unautorized to use Bluetooth Centeral")
-            case .unknown:
-                print("Bluetooth centeral is in Unknown state")
-            case .unsupported:
-                print("Bluetooth centeral is unsuppoeted in this device")
-            @unknown default:
-                print("Bluetooth centeral is in unknown default state")
-            }
-        }
-    }
+    private var _peripheralsDetected = PassthroughSubject<CBPeripheral, Never>()
+    private var _centeralStatePublisher = PassthroughSubject<CBManagerState, Never>()
+    private var _didFindCharacterStics = PassthroughSubject<[CBCharacteristic], Never>()
+    private var _connectedPeripheralPublisher = PassthroughSubject<CBPeripheral, Never>()
+    private var _didFindServices = PassthroughSubject<[CBService], Never>()
+    private var _updatedValueForConnectedPeripheral = PassthroughSubject<(peripheral: CBPeripheral, characterstic: CBCharacteristic), Error>()
     
-    @Published var connectedPeripheral: CBPeripheral?
+
+    
+    var preDefinedPeripheralServiceCBIUIDs: [CBUUID]? = [CBUUID(string: "0x180D")]
+
+    private var connectedPeripheral: CBPeripheral?
+    
+    
     
     
     lazy var centralManager: CBCentralManager = {
@@ -42,12 +31,16 @@ class BluetoothManager: NSObject, ObservableObject {
     }()
     
     init(preDefinedPeripheralCBIUIDs: [CBUUID]? = nil) {
-        self.preDefinedPeripheralCBIUIDs = preDefinedPeripheralCBIUIDs
+        self.preDefinedPeripheralServiceCBIUIDs = preDefinedPeripheralCBIUIDs
     }
     
     func scanPeripherals () {
         print("Bluetooth centeral is searching for peripherals")
-        centralManager.scanForPeripherals(withServices: preDefinedPeripheralCBIUIDs)
+        centralManager.scanForPeripherals(withServices: preDefinedPeripheralServiceCBIUIDs)
+    }
+    
+    func stopScanningForPeripherals() {
+        centralManager.stopScan()
     }
     
     func connectTo(_ peripheral: CBPeripheral) {
@@ -55,7 +48,11 @@ class BluetoothManager: NSObject, ObservableObject {
         centralManager.connect(peripheral)
     }
     
-    func disconnectedPeripheral() {
+    func didConnect(to peripheral: CBPeripheral) {
+        _connectedPeripheralPublisher.send(peripheral)
+    }
+    
+    func disconnetPeripheral() {
         guard let peripheral = connectedPeripheral else { return }
         centralManager.cancelPeripheralConnection(peripheral)
     }
@@ -64,12 +61,16 @@ class BluetoothManager: NSObject, ObservableObject {
         peripheral.discoverServices(services)
     }
     
-    func discoverCharacterstics(_ characterstics: [CBUUID]? = nil, for service: CBService) {
+    func discoverCharacterstics(_ characterstic: CBUUID? = nil, for service: CBService) {
         guard let peripheral = connectedPeripheral else {
             print("No connected peripheral")
             return
         }
-        peripheral.discoverCharacteristics(characterstics, for: service)
+        var characterStics: [CBUUID]?
+        if let targetCharacterStic = characterstic {
+            characterStics = [targetCharacterStic]
+        }
+        peripheral.discoverCharacteristics(characterStics, for: service)
     }
     
     func readValue(for characterstic: CBCharacteristic) {
@@ -82,21 +83,35 @@ class BluetoothManager: NSObject, ObservableObject {
         }
     }
     
+    func write(_ data: Data, for characterstic: CBCharacteristic) {
+        guard let peripheral = connectedPeripheral,
+              peripheral.canSendWriteWithoutResponse else {
+            return
+        }
+        var rawPacket = [UInt8]()
+        let mtu = peripheral.maximumWriteValueLength(for: .withoutResponse)
+        let bytesToCopy = min(mtu, data.count)
+        data.copyBytes(to: &rawPacket, count: bytesToCopy)
+        
+        let packetData = Data(bytes: &rawPacket, count: bytesToCopy)
+        peripheral.writeValue(packetData, for: characterstic, type: .withoutResponse)
+        
+    }
+    
 }
 extension BluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        centralState = central.state
-
+        _centeralStatePublisher.send(central.state)
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         print("Found peripheral \(peripheral)")
-        peripheralsDetected.append(peripheral)
+        _peripheralsDetected.send(peripheral)
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         print("Bluetooth centeral is connected to \(peripheral)")
-        connectedPeripheral = peripheral
+        didConnect(to: peripheral)
     }
 }
 
@@ -106,6 +121,7 @@ extension BluetoothManager: CBPeripheralDelegate {
             return
         }
         print("Connected peripheral services are \(services)")
+        _didFindServices.send(services)
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
@@ -116,14 +132,45 @@ extension BluetoothManager: CBPeripheralDelegate {
         characterstics.forEach { characterstic in
             print("Found Characterstic: \(characterstic) with properties:\(characterstic.properties) for service \(service) for peripheral \(peripheral)")
         }
+        _didFindCharacterStics.send(characterstics)
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        print("Received value \(characteristic.value) for characterstic \(characteristic)" )
+        print("Received value \(String(describing: characteristic.value)) for characterstic \(characteristic)" )
+        if let error = error {
+            _updatedValueForConnectedPeripheral.send(completion: .failure(error))
+            return
+        }
+        _updatedValueForConnectedPeripheral.send((peripheral: peripheral, characterstic: characteristic))
+        
+        
     }
+    
+
 }
 extension CBPeripheral: Identifiable {
     public var id: String {
-        rssi?.stringValue ?? name ?? "No name"
+        name ?? UUID().uuidString
+    }
+}
+
+extension BluetoothManager {
+    var peripheralsDetected: AnyPublisher<CBPeripheral, Never> {
+        _peripheralsDetected.eraseToAnyPublisher()
+    }
+    var centeralStatePublisher: AnyPublisher<CBManagerState, Never> {
+        _centeralStatePublisher.eraseToAnyPublisher()
+    }
+    var didFindCharacterStics: AnyPublisher<[CBCharacteristic], Never> {
+        _didFindCharacterStics.eraseToAnyPublisher()
+    }
+    var didConnectTo: AnyPublisher<CBPeripheral, Never> {
+        _connectedPeripheralPublisher.eraseToAnyPublisher()
+    }
+    var didFindServices: AnyPublisher<[CBService], Never> {
+        _didFindServices.eraseToAnyPublisher()
+    }
+    var updatedValueForConnectedPeripheral: AnyPublisher<(peripheral: CBPeripheral, characterstic: CBCharacteristic), Error> {
+        _updatedValueForConnectedPeripheral.eraseToAnyPublisher()
     }
 }

@@ -15,6 +15,7 @@
 		183A7F512996B7BF003B1CF2 /* BluetoothSearchingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183A7F502996B7BF003B1CF2 /* BluetoothSearchingUITests.swift */; };
 		183A7F532996B7BF003B1CF2 /* BluetoothSearchingUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183A7F522996B7BF003B1CF2 /* BluetoothSearchingUITestsLaunchTests.swift */; };
 		183A7F622996B812003B1CF2 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 183A7F612996B812003B1CF2 /* BluetoothManager.swift */; };
+		185BE83A29A4563D00D90286 /* BluetoothViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 185BE83929A4563D00D90286 /* BluetoothViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,6 +47,8 @@
 		183A7F502996B7BF003B1CF2 /* BluetoothSearchingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothSearchingUITests.swift; sourceTree = "<group>"; };
 		183A7F522996B7BF003B1CF2 /* BluetoothSearchingUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothSearchingUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		183A7F612996B812003B1CF2 /* BluetoothManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
+		185BE83929A4563D00D90286 /* BluetoothViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothViewModel.swift; sourceTree = "<group>"; };
+		1875EB9D29A0403C006C923E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,6 +79,7 @@
 		183A7F292996B7BC003B1CF2 = {
 			isa = PBXGroup;
 			children = (
+				1875EB9D29A0403C006C923E /* README.md */,
 				183A7F342996B7BC003B1CF2 /* BluetoothSearching */,
 				183A7F452996B7BF003B1CF2 /* BluetoothSearchingTests */,
 				183A7F4F2996B7BF003B1CF2 /* BluetoothSearchingUITests */,
@@ -101,6 +105,7 @@
 				183A7F372996B7BC003B1CF2 /* ContentView.swift */,
 				183A7F392996B7BE003B1CF2 /* Assets.xcassets */,
 				183A7F3B2996B7BE003B1CF2 /* Preview Content */,
+				185BE83929A4563D00D90286 /* BluetoothViewModel.swift */,
 			);
 			path = BluetoothSearching;
 			sourceTree = "<group>";
@@ -269,6 +274,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				183A7F382996B7BC003B1CF2 /* ContentView.swift in Sources */,
+				185BE83A29A4563D00D90286 /* BluetoothViewModel.swift in Sources */,
 				183A7F622996B812003B1CF2 /* BluetoothManager.swift in Sources */,
 				183A7F362996B7BC003B1CF2 /* BluetoothSearchingApp.swift in Sources */,
 			);

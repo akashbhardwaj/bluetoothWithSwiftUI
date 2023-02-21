@@ -6,18 +6,22 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ContentView: View {
-    @StateObject var bluetoothManager = BluetoothManager()
+
+    
+    
     var body: some View {
 
         NavigationStack {
-            List($bluetoothManager.peripheralsDetected) { item in
-                Text(item.wrappedValue.name ?? "No Peripheral")
-            }
+//            List($bluetoothManager.peripheralsDetected) { item in
+//            }
+            Text("item.wrappedValue.name ?? No Peripheral")
+
         }
         .onAppear {
-            bluetoothManager.scanPeripherals()
+//            bluetoothManager.scanPeripherals()
         }
     }
 }
